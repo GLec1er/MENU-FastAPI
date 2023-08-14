@@ -12,7 +12,7 @@ class SubMenuCrud(CRUDBase):
         title: str,
         description: str,
         session: AsyncSession,
-    ):
+    ) -> SubMenu:
         submenu = self.model(
             id=id, title=title, description=description, parent_id=parent_id
         )

@@ -7,7 +7,7 @@ class DishBase(BaseModel):
     price: str
 
     @validator("price")
-    def check_price(cls, value: str):
+    def check_price(cls, value: str) -> str:
         if not float(value):
             raise ValueError("price must be a number")
         value = format(float(value), ".2f")
@@ -15,7 +15,7 @@ class DishBase(BaseModel):
 
 
 class DishCreate(DishBase):
-    submenu_id = str
+    submenu_id: str
 
     class Config:
         schema_extra = {
@@ -29,8 +29,7 @@ class DishCreate(DishBase):
 
 class DishUpdate(DishCreate):
     class Config:
-        schema_extra = {
-        }
+        schema_extra = {}
 
 
 class DishOut(DishBase):

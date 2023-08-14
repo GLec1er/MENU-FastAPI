@@ -13,7 +13,7 @@ class DishCrud(CRUDBase):
         description: str,
         price: str,
         session: AsyncSession,
-    ):
+    ) -> Dish:
         dish = self.model(
             id=id,
             title=title,

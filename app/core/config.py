@@ -20,6 +20,15 @@ DATABASE_URL = (
     f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}" f"@{DB_HOST}:5432/{DB_NAME}"
 )
 
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+TEST_ASYNC_DATABASE_URL = os.getenv("TEST_ASYNC_DATABASE_URL")
+
+BROKER_USER = os.getenv("RABBITMQ_USER")
+BROKER_PASSWORD = os.getenv("RABBITMQ_PASSWORD")
+BROKER_HOST = os.getenv("RABBITMQ_HOST")
+
+BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}//"
+
 
 class Settings(BaseSettings):
     app_title: str = "Меню ресторана"

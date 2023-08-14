@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -15,7 +16,7 @@ class Validation:
         self,
         obj_id: str,
         session: AsyncSession,
-    ):
+    ) -> Any:
         model_name = self.model.__tablename__
         obj = await session.execute(
             select(self.model).where(
@@ -34,7 +35,7 @@ class Validation:
         self,
         obj_title: str,
         session: AsyncSession,
-    ):
+    ) -> Any:
         model_name = self.model.__tablename__
         obj_id = await session.execute(
             select(self.model.id).where(
