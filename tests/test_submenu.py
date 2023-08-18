@@ -1,18 +1,16 @@
 import json
-
 from httpx import AsyncClient
-
 from tests.test_data import (
     submenu_data,
     submenu_keys,
     updated_menu_data,
     updated_submenu_data,
 )
+from app.models import Menu, SubMenu
 
 
-async def test_create_submenu(async_client: AsyncClient, create_menu):
+async def test_create_submenu(async_client: AsyncClient, create_menu: Menu):
     """Создание подменю"""
-
     response = await async_client.post(
         f"/api/v1/menus/{create_menu.id}/submenus/",
         data=json.dumps(submenu_data),
@@ -25,9 +23,8 @@ async def test_create_submenu(async_client: AsyncClient, create_menu):
     assert resp_data["dishes_count"] == 0
 
 
-async def test_get_submenu_list(async_client: AsyncClient, create_submenu):
+async def test_get_submenu_list(async_client: AsyncClient, create_submenu: SubMenu):
     """Просмотр списка подменю"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.get(f"/api/v1/menus/{menu_id}/submenus/")
     assert response.status_code == 200
@@ -36,9 +33,8 @@ async def test_get_submenu_list(async_client: AsyncClient, create_submenu):
     assert len(subresp_data) == 1
 
 
-async def test_get_empty_submenu_list(async_client: AsyncClient, create_menu):
+async def test_get_empty_submenu_list(async_client: AsyncClient, create_menu: Menu):
     """Просмотр пустого списка подменю"""
-
     response = await async_client.get(
         f"/api/v1/menus/{create_menu.id}/submenus/",
     )
@@ -47,9 +43,8 @@ async def test_get_empty_submenu_list(async_client: AsyncClient, create_menu):
     assert resp_data == []
 
 
-async def test_get_submenu_by_id(async_client: AsyncClient, create_submenu):
+async def test_get_submenu_by_id(async_client: AsyncClient, create_submenu: SubMenu):
     """Просмотр подменю по id"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.get(
         f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}",
@@ -62,9 +57,8 @@ async def test_get_submenu_by_id(async_client: AsyncClient, create_submenu):
     assert resp_data["dishes_count"] == 0
 
 
-async def test_get_submenu_not_found(async_client: AsyncClient, create_menu):
+async def test_get_submenu_not_found(async_client: AsyncClient, create_menu: Menu):
     """GET-запрос к несуществующему подменю"""
-
     submenu_id = "not-id"
     response = await async_client.get(
         f"/api/v1/menus/{create_menu.id}/submenus/{submenu_id}",
@@ -74,9 +68,8 @@ async def test_get_submenu_not_found(async_client: AsyncClient, create_menu):
     assert resp_data["detail"] == "submenu not found"
 
 
-async def test_update_submenu(async_client: AsyncClient, create_submenu):
+async def test_update_submenu(async_client: AsyncClient, create_submenu: SubMenu):
     """Обновление подменю"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.patch(
         f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}",
@@ -90,9 +83,8 @@ async def test_update_submenu(async_client: AsyncClient, create_submenu):
     assert resp_data["dishes_count"] == 0
 
 
-async def test_patch_submenu_not_found(async_client: AsyncClient, create_menu):
+async def test_patch_submenu_not_found(async_client: AsyncClient, create_menu: Menu):
     """PATCH-запрос к несуществующему подменю"""
-
     submenu_id = "not-id"
     response = await async_client.patch(
         f"/api/v1/menus/{create_menu.id}/submenus/{submenu_id}",
@@ -103,9 +95,8 @@ async def test_patch_submenu_not_found(async_client: AsyncClient, create_menu):
     assert resp_data["detail"] == "submenu not found"
 
 
-async def test_delete_submenu(async_client: AsyncClient, create_submenu):
+async def test_delete_submenu(async_client: AsyncClient, create_submenu: SubMenu):
     """Удаление подменю"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.delete(
         f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}",

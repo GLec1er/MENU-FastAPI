@@ -1,26 +1,25 @@
 import json
-
 import xlsxwriter
-
 from app.report.celery import celery
+from typing import List, Dict, Any
 
 
 @celery.task(name="write_report", track_started=True)
-def write_report(menus):
-    menus = json.loads(menus)
-    name = celery.current_task.request.id
+def write_report(menus: str) -> None:
+    menus: List[Dict[str, Any]] = json.loads(menus)
+    name: str = celery.current_task.request.id
 
-    workbook = xlsxwriter.Workbook(f"app/data/{name}.xlsx")
-    worksheet = workbook.add_worksheet()
+    workbook: xlsxwriter.Workbook = xlsxwriter.Workbook(f"app/data/{name}.xlsx")
+    worksheet: xlsxwriter.worksheet.Worksheet = workbook.add_worksheet()
 
-    set_format = workbook.add_format()
+    set_format: xlsxwriter.format.Format = workbook.add_format()
     set_format.set_bold()
     set_format.set_font_size(12)
     set_format.set_text_wrap()
     set_format.set_align("vjustify")
     set_format.set_font_name("Times New Roman")
 
-    dish_format = workbook.add_format()
+    dish_format: xlsxwriter.format.Format = workbook.add_format()
     dish_format.set_bold()
     dish_format.set_italic()
     dish_format.set_font_size(10)
@@ -28,7 +27,7 @@ def write_report(menus):
     dish_format.set_align("vjustify")
     dish_format.set_font_name("Times New Roman")
 
-    dish_title_format = workbook.add_format()
+    dish_title_format: xlsxwriter.format.Format = workbook.add_format()
     dish_title_format.set_bold()
     dish_title_format.set_italic()
     dish_title_format.set_font_size(12)
@@ -38,15 +37,15 @@ def write_report(menus):
 
     worksheet.set_column(1, 4, 40, set_format)
 
-    menu_row = 0
-    menu_count = 1
-    menu_gap = 1
+    menu_row: int = 0
+    menu_count: int = 1
+    menu_gap: int = 1
 
-    submenu_row = 1
-    submenu_count = 1
+    submenu_row: int = 1
+    submenu_count: int = 1
 
-    dish_row = 2
-    dish_count = 1
+    dish_row: int = 2
+    dish_count: int = 1
 
     for menu in menus:
         worksheet.write(menu_row, 0, menu_count)

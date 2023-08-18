@@ -1,15 +1,12 @@
 import json
-
 from httpx import AsyncClient
-
-from app.models import Menu, SubMenu
+from app.models import Menu, SubMenu, Dish
 from tests.conftest import db
 from tests.test_data import dish_data, dish_keys, updated_dish_data
 
 
-async def test_create_dish(async_client: AsyncClient, create_submenu):
+async def test_create_dish(async_client: AsyncClient, create_submenu: SubMenu):
     """Создание блюда"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.post(
         f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}/dishes/",
@@ -23,9 +20,8 @@ async def test_create_dish(async_client: AsyncClient, create_submenu):
     assert resp_data["price"] == dish_data["price"]
 
 
-async def test_get_dish_list(async_client: AsyncClient, create_dish):
+async def test_get_dish_list(async_client: AsyncClient, create_dish: Dish):
     """Просмотр списка блюд"""
-
     menu = db.query(Menu).first()
     submenu = db.query(SubMenu).filter_by(parent_id=menu.id).first()
     response = await async_client.get(
@@ -37,9 +33,8 @@ async def test_get_dish_list(async_client: AsyncClient, create_dish):
     assert len(resp_data) == 1
 
 
-async def test_get_empty_dish_list(async_client: AsyncClient, create_submenu):
+async def test_get_empty_dish_list(async_client: AsyncClient, create_submenu: SubMenu):
     """Просмотр пустого списка блюд"""
-
     menu_id = create_submenu.parent_id
     response = await async_client.get(
         f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}/dishes/",
@@ -49,13 +44,12 @@ async def test_get_empty_dish_list(async_client: AsyncClient, create_submenu):
     assert subresp_data == []
 
 
-async def test_get_dish_by_id(async_client: AsyncClient, create_dish):
+async def test_get_dish_by_id(async_client: AsyncClient, create_dish: Dish):
     """Просмотр блюда по id"""
-
     menu = db.query(Menu).first()
     submenu = db.query(SubMenu).filter_by(parent_id=menu.id).first()
     response = await async_client.get(
-        f"/api/v1/menus/{menu.id}/submenus/" f"{submenu.id}/dishes/{create_dish.id}",
+        f"/api/v1/menus/{menu.id}/submenus/{submenu.id}/dishes/{create_dish.id}",
     )
     resp_data = response.json()
     assert response.status_code == 200
@@ -67,27 +61,25 @@ async def test_get_dish_by_id(async_client: AsyncClient, create_dish):
 
 async def test_get_dish_not_found(
     async_client: AsyncClient,
-    create_submenu,
+    create_submenu: SubMenu,
 ):
     """GET-запрос к несуществующему блюду"""
-
     menu_id = create_submenu.parent_id
     dish_id = "not-id"
     subresp = await async_client.get(
-        f"/api/v1/menus/{menu_id}/submenus/" f"{create_submenu.id}/dishes/{dish_id}",
+        f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}/dishes/{dish_id}",
     )
     assert subresp.status_code == 404
     resp_data = subresp.json()
     assert resp_data["detail"] == "dish not found"
 
 
-async def test_update_dish(async_client: AsyncClient, create_dish):
+async def test_update_dish(async_client: AsyncClient, create_dish: Dish):
     """Обновление блюда"""
-
     menu = db.query(Menu).first()
     submenu = db.query(SubMenu).filter_by(parent_id=menu.id).first()
     response = await async_client.patch(
-        f"/api/v1/menus/{menu.id}/submenus/" f"{submenu.id}/dishes/{create_dish.id}",
+        f"/api/v1/menus/{menu.id}/submenus/{submenu.id}/dishes/{create_dish.id}",
         data=json.dumps(updated_dish_data),
     )
     resp_data = response.json()
@@ -100,14 +92,13 @@ async def test_update_dish(async_client: AsyncClient, create_dish):
 
 async def test_patch_dish_not_found(
     async_client: AsyncClient,
-    create_submenu,
+    create_submenu: SubMenu,
 ):
     """PATCH-запрос к несуществующему блюду"""
-
     menu_id = create_submenu.parent_id
     dish_id = "not-id"
     response = await async_client.patch(
-        f"/api/v1/menus/{menu_id}/submenus/" f"{create_submenu.id}/dishes/{dish_id}",
+        f"/api/v1/menus/{menu_id}/submenus/{create_submenu.id}/dishes/{dish_id}",
         data=json.dumps(updated_dish_data),
     )
     assert response.status_code == 404
@@ -115,19 +106,18 @@ async def test_patch_dish_not_found(
     assert resp_data["detail"] == "dish not found"
 
 
-async def test_delete_dish(async_client: AsyncClient, create_dish):
+async def test_delete_dish(async_client: AsyncClient, create_dish: Dish):
     """Удаление блюда"""
-
     menu = db.query(Menu).first()
     submenu = db.query(SubMenu).filter_by(parent_id=menu.id).first()
     response = await async_client.delete(
-        f"/api/v1/menus/{menu.id}/submenus/" f"{submenu.id}/dishes/{create_dish.id}",
+        f"/api/v1/menus/{menu.id}/submenus/{submenu.id}/dishes/{create_dish.id}",
     )
     resp_data = response.json()
     assert response.status_code == 200
     assert resp_data["status"] is True
     assert resp_data["message"] == "The dish has been deleted"
     deleted_resp = await async_client.get(
-        f"/api/v1/menus/{menu.id}/submenus/" f"{submenu.id}/dishes/{create_dish.id}",
+        f"/api/v1/menus/{menu.id}/submenus/{submenu.id}/dishes/{create_dish.id}",
     )
     assert deleted_resp.status_code == 404

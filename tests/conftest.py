@@ -1,13 +1,11 @@
 import asyncio
 from collections.abc import Generator
-
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-
 from app.core.config import TEST_ASYNC_DATABASE_URL, TEST_DATABASE_URL
 from app.core.db import Base, get_async_session
 from app.main import app
@@ -23,7 +21,7 @@ TestingSessionLocal = sessionmaker(
 )
 
 
-async def override_db():
+async def override_db() -> Generator[AsyncSession, None, None]:
     async with TestingSessionLocal() as session:
         yield session
 
@@ -38,7 +36,7 @@ async def init_db():
 
 
 @pytest.fixture(scope="session")
-def event_loop(request) -> Generator:
+def event_loop(request) -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -50,12 +48,11 @@ async def async_client() -> AsyncClient:
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
 
-
 engine = create_engine(TEST_DATABASE_URL)
 Session = sessionmaker(bind=engine)
 
 
-def override_get_db():
+def override_get_db() -> Generator[AsyncSession, None, None]:
     try:
         db = Session()
         yield db
@@ -67,7 +64,7 @@ db = next(override_get_db())
 
 
 @pytest.fixture
-def create_menu():
+def create_menu() -> Menu:
     new_menu = Menu(**menu_data)
     db.add(new_menu)
     db.commit()
@@ -75,7 +72,7 @@ def create_menu():
 
 
 @pytest.fixture
-def create_submenu(create_menu):
+def create_submenu(create_menu) -> SubMenu:
     new_submenu = SubMenu(**submenu_data, parent_id=create_menu.id)
     db.add(new_submenu)
     db.commit()
@@ -83,7 +80,7 @@ def create_submenu(create_menu):
 
 
 @pytest.fixture
-def create_dish(create_submenu):
+def create_dish(create_submenu) -> Dish:
     new_dish = Dish(**dish_data, parent_id=create_submenu.id)
     db.add(new_dish)
     db.commit()

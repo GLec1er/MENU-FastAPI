@@ -1,17 +1,16 @@
 import json
-
 import aiofiles
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.db import get_async_session
 from app.crud.dish import dish_crud
 from app.crud.menu import menu_crud
 from app.crud.submenu import submenu_crud
 from app.schemas.status import StatusMessage
+from typing import List, Dict, Any
 
 
-async def load_data_for_report():
+async def load_data_for_report() -> List[Dict[str, Any]]:
     async with aiofiles.open("app/report/report_data.json", mode="r") as f:
         data = await f.read()
 
@@ -20,10 +19,10 @@ async def load_data_for_report():
 
 
 class CreateData:
-    def __init__(self, session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_data_for_report(self):
+    async def create_data_for_report(self) -> StatusMessage:
         menus = await load_data_for_report()
         for menu in menus:
             await menu_crud.create_from_dict(
@@ -58,5 +57,5 @@ class CreateData:
         )
 
 
-async def data_service(session: AsyncSession = Depends(get_async_session)):
+async def data_service(session: AsyncSession = Depends(get_async_session)) -> CreateData:
     return CreateData(session=session)
