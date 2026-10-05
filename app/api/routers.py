@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     dish_router,
     dump_router,
+    jobs_router,
     menu_router,
     report_router,
     submenu_router,
@@ -14,3 +15,4 @@ main_router.include_router(submenu_router)
 main_router.include_router(dish_router)
 main_router.include_router(dump_router)
 main_router.include_router(report_router)
+main_router.include_router(jobs_router)

@@ -49,7 +49,9 @@ async def async_client() -> AsyncClient:
         yield client
 
 engine = create_engine(TEST_DATABASE_URL)
-Session = sessionmaker(bind=engine)
+# expire_on_commit=False: иначе чтение атрибута после commit открывает транзакцию,
+# которая держит блокировку и подвешивает DROP TABLE в init_db.
+Session = sessionmaker(bind=engine, expire_on_commit=False)
 
 
 def override_get_db() -> Generator[AsyncSession, None, None]:
@@ -61,6 +63,13 @@ def override_get_db() -> Generator[AsyncSession, None, None]:
 
 
 db = next(override_get_db())
+
+
+@pytest.fixture(autouse=True)
+def release_db_locks(init_db):
+    """Откатывает открытую транзакцию общей сессии до DROP TABLE в init_db."""
+    yield
+    db.rollback()
 
 
 @pytest.fixture

@@ -7,8 +7,6 @@ class SubMenuBase(BaseModel):
 
 
 class SubMenuCreate(SubMenuBase):
-    menu_id: str
-
     class Config:
         schema_extra = {
             "example": {

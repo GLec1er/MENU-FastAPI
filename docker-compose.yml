@@ -43,7 +43,7 @@ services:
         condition: service_healthy
 
   redis:
-    image: redis:latest
+    image: redis:7.0-alpine
     expose:
       - 6379
     ports:
@@ -64,16 +64,39 @@ services:
       - .:/app
     entrypoint: >
       sh -c "
-        celery -A app.report.celery worker --loglevel=info
-
+        celery -A app.report.celery worker -Q jobs.execute --loglevel=info
       "
     env_file:
       - .env
     networks:
       - web_network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  dispatcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    entrypoint: python -m app.jobs.dispatcher
+    env_file:
+      - .env
+    networks:
+      - web_network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   rabbitmq:
-    image: rabbitmq:latest
+    image: rabbitmq:3.12-alpine
     container_name: rabbitmq
     restart: always
     hostname: rabbitmq

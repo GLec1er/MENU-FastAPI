@@ -1,4 +1,7 @@
-version: '3.8'
+# Модульные и API-тесты. Значения подключения заданы здесь и не зависят от .env.
+x-test-env: &test-env
+  TEST_DATABASE_URL: postgresql://test:test@test_db:5432/menu_test
+  TEST_ASYNC_DATABASE_URL: postgresql+asyncpg://test:test@test_db:5432/menu_test
 
 services:
   test_app:
@@ -6,28 +9,42 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment: *test-env
     entrypoint: >
       sh -c "
-        pytest -vv"
+        pytest -vv tests"
     networks:
       - test_network
-    ports:
-      - "8001:8000"
     depends_on:
       redis:
         condition: service_healthy
+      test_db:
+        condition: service_healthy
+
+  test_db:
+    container_name: "test_db"
+    image: postgres:15.1-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: menu_test
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U test -d menu_test" ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    networks:
+      - test_network
 
   redis:
     container_name: "redis"
-    image: redis:latest
+    image: redis:7.0-alpine
     expose:
       - 6379
-    ports:
-      - "6378:6379"
     networks:
       - test_network
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ping"]
       interval: 5s
       timeout: 20s
       retries: 20

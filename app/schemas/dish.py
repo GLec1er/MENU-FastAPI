@@ -15,8 +15,6 @@ class DishBase(BaseModel):
 
 
 class DishCreate(DishBase):
-    submenu_id: str
-
     class Config:
         schema_extra = {
             "example": {

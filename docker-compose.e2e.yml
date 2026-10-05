@@ -1,0 +1,116 @@
+version: '3.8'
+
+# Стенд для испытаний со сбоями: реальные PostgreSQL, RabbitMQ, диспетчер и worker.
+# Интервалы сокращены, но переходы состояний те же. Запуск: e2e/run.sh
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &app-env
+    POSTGRES_HOST: db
+    POSTGRES_DB: menu
+    POSTGRES_USER: e2e
+    POSTGRES_PASSWORD: e2e
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_USER: e2e
+    RABBITMQ_PASSWORD: e2e
+    JOB_LEASE_SECONDS: "8"
+    JOB_TIME_LIMIT: "6"
+    JOB_RETRY_DELAYS: "1,2"
+    REDELIVERY_TIMEOUT: "8"
+    RECONCILE_INTERVAL: "2"
+    DISPATCHER_POLL_INTERVAL: "0.5"
+    PUBLISH_RETRY_DELAY: "1"
+    PUBLISH_TIMEOUT: "3"
+  networks:
+    - e2e
+
+services:
+  db:
+    image: postgres:15.1-alpine
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+      POSTGRES_DB: menu
+    ports:
+      - "${E2E_DB_PORT:-55432}:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U e2e -d menu" ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    networks:
+      - e2e
+
+  redis:
+    image: redis:7.0-alpine
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping" ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    networks:
+      - e2e
+
+  rabbitmq:
+    image: rabbitmq:3.12-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: e2e
+      RABBITMQ_DEFAULT_PASS: e2e
+      # Healthcheck работает от root: без заданного cookie он может создать
+      # .erlang.cookie с чужим владельцем раньше сервера.
+      RABBITMQ_ERLANG_COOKIE: e2e-cookie
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 3s
+      timeout: 10s
+      retries: 30
+    networks:
+      - e2e
+
+  migrate:
+    <<: *app
+    entrypoint: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    entrypoint: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "${E2E_API_PORT:-58000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  dispatcher:
+    <<: *app
+    entrypoint: python -m app.jobs.dispatcher
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    environment:
+      <<: *app-env
+      JOB_TEST_BARRIER: "${JOB_TEST_BARRIER:-}"
+      JOB_TEST_FAIL: "${JOB_TEST_FAIL:-}"
+      JOB_TEST_BARRIER_DIR: /barriers
+    entrypoint: celery -A app.report.celery worker -Q jobs.execute --loglevel=info --concurrency=1
+    volumes:
+      - "${E2E_BARRIER_DIR:-/tmp/menu-e2e-barriers}:/barriers"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  e2e:
